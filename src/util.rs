@@ -22,7 +22,7 @@ pub fn table(data: Vec<Vec<String>>) -> String {
     let mut table = String::new();
     for row in data {
         for (i, cell) in row.iter().enumerate() {
-            table.push_str(&format!("{:width$} ", cell, width = max_widths[i]))
+            table.push_str(&format!("{:width$} | ", cell, width = max_widths[i]))
         }
         table.push('\n')
     }

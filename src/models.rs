@@ -55,4 +55,13 @@ impl Fissure {
             self.enemy.clone(),
         ]
     }
+    pub fn table_headers() -> Vec<String> {
+        vec![
+            "SP".to_string(),
+            "Tier".to_string(),
+            "Mission Type".to_string(),
+            "Node (Region)".to_string(),
+            "Faction".to_string(),
+        ]
+    }
 }
