@@ -5,7 +5,7 @@ use std::{
 
 use models::Fissure;
 use notify_rust::Notification;
-use time::{Time, OffsetDateTime};
+use time::OffsetDateTime;
 use tokio;
 
 mod api;
@@ -16,29 +16,42 @@ mod util;
 use mission_type::MissionType;
 use util::*;
 
+const DEFAULT_CONFIG: &str = include_str!("../default-config.toml");
+const CONFIG_PATH: &str = "reapers-wf-config.toml";
+
+#[derive(serde::Deserialize)]
 struct Config {
     mission_filter: Vec<MissionType>,
     tier_filter: Vec<u8>,
-    refresh_rate: Duration,
+    refresh_rate: u64,
 }
-impl Default for Config {
-    fn default() -> Self {
-        Self {
-            mission_filter: vec![
-                MissionType::Disruption,
-            ],
-            tier_filter: vec![1, 2, 3, 4],
-            refresh_rate: Duration::from_secs(60 * 5),
-        }
+impl Config {
+    fn create_default_file() -> Result<Config, Box<dyn Error>> {
+        std::fs::write(CONFIG_PATH, DEFAULT_CONFIG)?;
+        Ok(toml::from_str::<Config>(DEFAULT_CONFIG)?)
     }
 }
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    let config = Config::default();
+    // load config
+    let config = if let Ok(config) = std::fs::read_to_string(CONFIG_PATH) {
+        if let Ok(conf) = toml::from_str::<Config>(&config) {
+            conf
+        } else {
+            println!("Error parsing config file, if you have edited it, please fix it, otherwise delete it and restart the program.");
+            println!("Press any key to exit");
+            // pause for input so the user can read the error
+            let mut _out = String::new();
+            std::io::stdin().read_line(&mut _out)?;
+            return Ok(());
+        }
+    } else {
+        Config::create_default_file()?
+    };
     // print the config
     println!("Starting fissure watcher with config:");
-    println!("Refresh Rate: {}s", config.refresh_rate.as_secs());
+    println!("Refresh Rate: {}s", config.refresh_rate);
     println!("Tier Filter: {}", config.tier_filter.iter().map(|tier| format!("{}", tier)).collect::<Vec<String>>().join(", "));
     println!("Mission Filter: {}", config.mission_filter.iter().map(|mission| format!("{}", mission)).collect::<Vec<String>>().join(", "));
 
@@ -63,7 +76,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 .collect::<Vec<&models::Fissure>>();
 
             if filtered_fissures.len() == 0 {
-                println!("No fissures found (of {})", fissures.len());
+                println!("No fissures found (of {}, {} new)", fissures.len(), new_count);
             } else {
                 println!("New Fissure(s):");
                 println!(
@@ -86,7 +99,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                     .show()?;
             }
         }
-        tokio::time::sleep(config.refresh_rate - start.elapsed()).await
+        tokio::time::sleep(Duration::from_secs(config.refresh_rate) - start.elapsed()).await
     }
 }
 

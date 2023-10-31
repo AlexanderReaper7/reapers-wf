@@ -1,0 +1,28 @@
+# Interval between refreshes in seconds. Default: 300
+refresh_rate = 300
+# 1 = Lith, 2 = Meso, 3 = Neo, 4 = Axi, 5 = Requiem. Default: [1, 2, 3, 4]
+tier_filter = [1, 2, 3, 4]
+# Mission types to filter. Default: ["Disruption"]
+mission_filter = [
+    #"Capture",
+    #"Defense",
+    #"Excavation",
+    #"Extermination",
+    #"Interception",
+    #"Mobile Defense",
+    #"Rescue",
+    #"Sabotage",
+    #"Survival",
+    #"Spy",
+    #"Hijack",
+    #"Assault",
+    #"Defection",
+    #"Infested Salvage",
+    "Disruption",
+    #"Sanctuary Onslaught",
+    #"Free Roam",
+    #"Arena",
+    #"Skirmish",
+    #"Orphix",
+    #"Volatile",
+]
