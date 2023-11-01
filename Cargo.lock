@@ -1224,8 +1224,11 @@ name = "reapers-wf"
 version = "0.2.0"
 dependencies = [
  "notify-rust",
+ "proc-macro2",
+ "quote",
  "reqwest",
  "serde",
+ "syn 2.0.38",
  "time",
  "tokio",
  "toml",

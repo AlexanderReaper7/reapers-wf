@@ -1,6 +1,8 @@
 use std::fmt::Display;
 use serde::Deserialize;
 
+use crate::filters::{Factions, Tier};
+
 #[derive(Debug, Deserialize, Clone, PartialEq, Eq)]
 pub struct Fissure {
     /// unique identifier for this object/event/thing
@@ -26,13 +28,13 @@ pub struct Fissure {
     pub mission_type: super::MissionType,
     #[serde(rename = "missionKey")]
     pub mission_key: String,
-    pub tier: String,
+    pub tier: Tier,
     /// Numeric tier corresponding to the tier
     #[serde(rename = "tierNum")]
     pub tier_num: u8,
-    pub enemy: String,
+    pub enemy: Factions,
     #[serde(rename = "enemyKey")]
-    pub enemy_key: String,
+    pub enemy_key: Factions,
     /// Whether this fissure is a void storm
     #[serde(rename = "isStorm")]
     pub is_storm: bool,
@@ -49,10 +51,10 @@ impl Fissure {
     pub fn table_string(&self) -> Vec<String> {
         vec![
             if self.is_hard {"SP".to_string()} else {"".to_string()},
-            self.tier.clone(),
-            format!("{}", self.mission_type),
+            self.tier.to_string().clone(),
+            self.mission_type.to_string().clone(),
             self.node.clone(),
-            self.enemy.clone(),
+            self.enemy.to_string().clone(),
         ]
     }
     pub fn table_headers() -> Vec<String> {

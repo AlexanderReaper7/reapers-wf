@@ -1,0 +1,12 @@
+{
+    "cSpell.words": [
+        "fromstr",
+        "Grineer",
+        "Meso",
+        "Narmer",
+        "Orokin"
+    ],
+    "rust-analyzer.linkedProjects": [
+        ".\\Cargo.toml"
+    ]
+}

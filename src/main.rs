@@ -8,13 +8,19 @@ use notify_rust::Notification;
 use time::OffsetDateTime;
 use tokio;
 
+extern crate procmacros;
+
 mod api;
 mod mission_type;
 mod models;
+mod filters;
 mod util;
 
 use mission_type::MissionType;
+use filters::{ExclusivityFilter, Factions, Tier};
 use util::*;
+
+use crate::filters::Filter;
 
 const DEFAULT_CONFIG: &str = include_str!("../default-config.toml");
 const CONFIG_PATH: &str = "reapers-wf-config.toml";
@@ -22,7 +28,9 @@ const CONFIG_PATH: &str = "reapers-wf-config.toml";
 #[derive(serde::Deserialize)]
 struct Config {
     mission_filter: Vec<MissionType>,
-    tier_filter: Vec<u8>,
+    tier_filter: Vec<Tier>,
+    faction_filter: Vec<Factions>,
+    void_storm_filter: ExclusivityFilter,
     refresh_rate: u64,
 }
 impl Config {
@@ -39,7 +47,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         if let Ok(conf) = toml::from_str::<Config>(&config) {
             conf
         } else {
-            println!("Error parsing config file, if you have edited it, please fix it, otherwise delete it and restart the program.");
+            println!("!!! Error parsing config file, if you have edited it, please fix it, otherwise delete it and restart the program.");
             println!("Press any key to exit");
             // pause for input so the user can read the error
             let mut _out = String::new();
@@ -47,14 +55,16 @@ async fn main() -> Result<(), Box<dyn Error>> {
             return Ok(());
         }
     } else {
+        println!("!!! No config file found, creating default config file {}.", CONFIG_PATH);
         Config::create_default_file()?
     };
     // print the config
     println!("Starting fissure watcher with config:");
     println!("Refresh Rate: {}s", config.refresh_rate);
-    println!("Tier Filter: {}", config.tier_filter.iter().map(|tier| format!("{}", tier)).collect::<Vec<String>>().join(", "));
-    println!("Mission Filter: {}", config.mission_filter.iter().map(|mission| format!("{}", mission)).collect::<Vec<String>>().join(", "));
-
+    println!("Tier Filter: {}", comma_separated_string(&config.tier_filter));
+    println!("Mission Filter: {}", comma_separated_string(&config.mission_filter));
+    println!("Faction Filter: {}", comma_separated_string(&config.faction_filter));
+    println!("Void Storm Filter: {}", config.void_storm_filter);
 
     let mut fissures: Vec<models::Fissure> = Vec::new();
     // refresh every time refresh_rate elapses
@@ -70,8 +80,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 .iter()
                 .skip(fissures.len() - new_count as usize)
                 .filter(|fissure| {
-                    config.mission_filter.contains(&fissure.mission_type)
-                        && config.tier_filter.contains(&fissure.tier_num)
+                    config.mission_filter.iter().any(|filter| filter.apply_filter(fissure)) &&
+                    config.tier_filter.iter().any(|filter| filter.apply_filter(fissure)) &&
+                    config.faction_filter.iter().any(|filter| filter.apply_filter(fissure)) &&
+                    config.void_storm_filter.apply_filter(fissure)
                 })
                 .collect::<Vec<&models::Fissure>>();
 

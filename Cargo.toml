@@ -1,8 +1,15 @@
 [package]
 name = "reapers-wf"
 version = "0.2.0"
+authors = ["AlexanderReaper7 <AlexanderReaper7@users.noreply.github.com>"]
 edition = "2021"
-
+[lib]
+name = "procmacros"
+path = "src/procmacros.rs"
+proc-macro = true
+[[bin]]
+name = "reapers-wf"
+path = "src/main.rs"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
@@ -12,3 +19,6 @@ tokio = { version = "1", features = ["full"] }
 notify-rust = "4.9"
 time = {version = "0.3.30", features = ["serde", "parsing", "local-offset", "formatting"]}
 toml = "0.8"
+syn = "2.0"
+quote = "1.0"
+proc-macro2 = "1.0"

@@ -1,3 +1,6 @@
+#![allow(dead_code)]
+use std::fmt::Display;
+
 /// Inserts a space before each capital letter except the first
 pub fn separate_camel_case(string: &str) -> String {
     string.chars().enumerate().map(|(i, c)| {
@@ -27,4 +30,8 @@ pub fn table(data: Vec<Vec<String>>) -> String {
         table.push('\n')
     }
     table
+}
+
+pub fn comma_separated_string<T>(input: &Vec<T>) -> String where T: Display {
+    input.iter().map(|tier| tier.to_string()).collect::<Vec<String>>().join(", ")
 }
