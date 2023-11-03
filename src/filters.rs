@@ -34,6 +34,7 @@ pub enum Factions {
     Corpus,
     Infested,
     Narmer,
+    Crossfire,
 }
 impl Filter for Factions {
     fn apply_filter(&self, value: &Fissure) -> bool {
