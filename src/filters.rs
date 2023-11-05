@@ -3,9 +3,6 @@ use serde::{Deserialize, Serialize};
 
 use crate::models::Fissure;
 
-pub trait Filter {
-    fn apply_filter(&self, value: &Fissure) -> bool;
-}
 
 /// Whether to include, exclude or exclusively use the given value
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Display, FromStr)]
@@ -17,12 +14,12 @@ pub enum ExclusivityFilter {
     /// Exclude all but these values
     Exclusive,
 }
-impl Filter for ExclusivityFilter {
-    fn apply_filter(&self, value: &Fissure) -> bool {
+impl ExclusivityFilter {
+    pub fn apply_filter(&self, value: bool) -> bool {
         match self {
-            ExclusivityFilter::Exclude => !value.is_storm,
+            ExclusivityFilter::Exclude => !value,
             ExclusivityFilter::Include => true,
-            ExclusivityFilter::Exclusive => value.is_storm,
+            ExclusivityFilter::Exclusive => value,
         }
     }
 }
@@ -36,8 +33,8 @@ pub enum Factions {
     Narmer,
     Crossfire,
 }
-impl Filter for Factions {
-    fn apply_filter(&self, value: &Fissure) -> bool {
+impl Factions {
+    pub fn apply_filter(&self, value: &Fissure) -> bool {
         value.enemy == *self
     }
 }
@@ -50,8 +47,8 @@ pub enum Tier {
     Axi,
     Requiem,
 }
-impl Filter for Tier {
-    fn apply_filter(&self, value: &Fissure) -> bool {
+impl Tier {
+    pub fn apply_filter(&self, value: &Fissure) -> bool {
         value.tier == *self
     }
 }

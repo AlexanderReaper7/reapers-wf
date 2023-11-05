@@ -49,12 +49,15 @@ impl Display for Fissure {
 }
 impl Fissure {
     pub fn table_string(&self) -> Vec<String> {
+        let time_format: Vec<time::format_description::FormatItem<'_>> = time::format_description::parse(
+            "[hour]:[minute]:[second]").unwrap();
         vec![
             if self.is_hard {"SP".to_string()} else {"".to_string()},
-            self.tier.to_string().clone(),
-            self.mission_type.to_string().clone(),
+            self.tier.to_string(),
+            self.mission_type.to_string(),
             self.node.clone(),
-            self.enemy.to_string().clone(),
+            self.enemy.to_string(),
+            self.expiry.format(&time_format).unwrap(),
         ]
     }
     pub fn table_headers() -> Vec<String> {
@@ -64,6 +67,7 @@ impl Fissure {
             "Mission Type".to_string(),
             "Node (Region)".to_string(),
             "Faction".to_string(),
+            "Expiry".to_string(),
         ]
     }
 }

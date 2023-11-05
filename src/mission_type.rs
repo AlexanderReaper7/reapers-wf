@@ -1,9 +1,6 @@
 use procmacros::{Display, FromStr};
 use serde::{Serialize, Deserialize};
 
-use crate::filters::Filter;
-
-
 #[derive(Debug,Serialize,Deserialize,Clone,Copy,PartialEq,Eq,Hash,Display,FromStr)]
 pub enum MissionType {
     Capture,
@@ -38,8 +35,8 @@ pub enum MissionType {
     Deception,
     Crossfire,
 }
-impl Filter for MissionType {
-    fn apply_filter(&self, value: &crate::models::Fissure) -> bool {
+impl MissionType {
+    pub fn apply_filter(&self, value: &crate::models::Fissure) -> bool {
         value.mission_type == *self
     }
 }

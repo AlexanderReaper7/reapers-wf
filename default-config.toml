@@ -1,5 +1,7 @@
 # Interval between refreshes in seconds. Default: 300
 refresh_rate = 300
+# In seconds how long before the fissure expires to send a notification. Default: 300
+time_before_expiry_notification = 300
 
 # Default: ["Lith", "Meso", "Neo", "Axi"]
 tier_filter = [
@@ -47,6 +49,7 @@ faction_filter = [
     "Grineer",
     "Corpus",
     "Infested",
+    #"Crossfire",
 ]
 
 # filter for railjack fissures "void storms". Default: "Exclude"

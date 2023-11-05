@@ -4,7 +4,8 @@
         "Grineer",
         "Meso",
         "Narmer",
-        "Orokin"
+        "Orokin",
+        "Warframe"
     ],
     "rust-analyzer.linkedProjects": [
         ".\\Cargo.toml"
