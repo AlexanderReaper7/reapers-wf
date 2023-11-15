@@ -1,10 +1,12 @@
 {
     "cSpell.words": [
+        "argh",
         "fromstr",
         "Grineer",
         "Meso",
         "Narmer",
         "Orokin",
+        "ratatui",
         "Warframe"
     ],
     "rust-analyzer.linkedProjects": [
