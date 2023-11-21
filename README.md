@@ -1,4 +1,4 @@
-# Reaper´s Warframe Tool
+# Reaper´s Warframe Tools
 
 ## Fissure watcher
 
