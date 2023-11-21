@@ -67,10 +67,7 @@ pub struct App<'a> {
     pub console_log: StatefulList<'a>,
     pub current_cmd: String,
     pub config: Arc<RwLock<Config>>,
-    pub fissures: Vec<Fissure>,
-    pub filtered_fissures: Vec<Fissure>,
-    pub fissure_rx: mpsc::Receiver<fissure_watcher::Event>,
-    fissure_handle: tokio::task::JoinHandle<()>,
+    pub fissure_watcher: fissure_watcher::FissureWatcher,
 }
 
 impl<'a> App<'a> {
@@ -78,25 +75,21 @@ impl<'a> App<'a> {
         // init console log
         let mut console_log = StatefulList {
             state: ListState::default(),
-            list: vec![Text::raw("Starting Reapers Warframe Tools")],
+            list: vec![Text::raw("Starting Reaper's Warframe Tools")],
         };
         // load config
         let (config, text) = App::load_config().await;
         let config = Arc::new(RwLock::new(config));
         console_log.list.push(text);
         // start fissure watcher
-        let (fissure_tx, fissure_rx) = mpsc::channel::<fissure_watcher::Event>(20);
-        let fissure_handle = fissure_watcher::run(Arc::clone(&config), fissure_tx);
+        let fissure_watcher = fissure_watcher::FissureWatcher::new(config.clone());
         App {
             should_quit: false,
             tabs: TabsState::new(vec!["Console", "Fissures", "Settings"]),
             console_log,
             current_cmd: String::new(),
             config,
-            fissures: Vec::new(),
-            filtered_fissures: Vec::new(),
-            fissure_rx,
-            fissure_handle,
+            fissure_watcher,
         }
     }
 
@@ -114,6 +107,9 @@ impl<'a> App<'a> {
             0 => {
                 self.console_log.previous();
             }
+            1 => {
+                self.fissure_watcher.previous();
+            }
             _ => {}
         };
     }
@@ -122,6 +118,9 @@ impl<'a> App<'a> {
         match self.tabs.index {
             0 => {
                 self.console_log.next();
+            }
+            1 => {
+                self.fissure_watcher.next();
             }
             _ => {}
         };
@@ -148,15 +147,14 @@ impl<'a> App<'a> {
     pub(crate) fn update(&mut self) {
         // Go through all the events sent from the worker threads
         // Fissure watcher
-        while let Ok(event) = self.fissure_rx.try_recv() {
+        while let Ok(event) = self.fissure_watcher.fissure_rx.try_recv() {
             let time_format: Vec<time::format_description::FormatItem<'_>> = time::format_description::parse(
                 "[hour]:[minute]:[second]").unwrap();
             let now = time::OffsetDateTime::now_utc();
             let time_stamp = now.format(&time_format).unwrap();
             match event {
                 fissure_watcher::Event::Fissures{fissures, filtered_fissures, new_count} => {
-                    self.fissures = fissures;
-                    self.filtered_fissures = filtered_fissures;
+                    self.fissure_watcher.update_fissures(fissures, filtered_fissures);
                     self.console_log.list.push(Text::raw(format!("[{}] {} new fissures", time_stamp, new_count)));
                 }
                 fissure_watcher::Event::Err(e) => {

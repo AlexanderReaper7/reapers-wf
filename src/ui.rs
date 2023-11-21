@@ -24,7 +24,7 @@ pub fn draw(f: &mut Frame, app: &mut App) {
     draw_footer(f, chunks[2]);
     match app.tabs.index {
         0 => draw_console_tab(f, app, chunks[1]),
-        1 => draw_fissures_tab(f, app, chunks[1]),
+        1 => app.fissure_watcher.draw(f, chunks[1]),
         _ => {}
     };
 }
@@ -52,27 +52,11 @@ fn draw_console_tab(f: &mut Frame, app: &mut App, area: Rect) {
     f.render_widget(current_command, chunks[1]);
 }
 
-fn draw_fissures_tab(f: &mut Frame, app: &mut App, area: Rect) {
-    let rows = app
-        .fissures
-        .iter()
-        .map(|fissure| fissure.table_string())
-        .collect::<Vec<Vec<String>>>();
-    let header = Fissure::table_headers();
-    let widths = calculate_table_widths(&header, &rows);
-    let fissure_table = Table::new(rows.into_iter().map(|row| Row::new(row)))
-        .header(Row::new(header))
-        .widths(&widths)
-        .column_spacing(3)
-        //.block(Block::default().borders(Borders::LEFT | Borders::RIGHT))
-        ;
-    f.render_stateful_widget(fissure_table, area, &mut TableState::default());
-}
 
 /// Calculate the widths of the table columns based on the longest string in each column.
 /// # Returns
 /// A vector of `Constraint::Length(max)`s with `max` being the longest number of chars in that column.
-fn calculate_table_widths(header: &Vec<String>, rows: &Vec<Vec<String>>) -> Vec<Constraint> {
+pub fn calculate_table_widths(header: &Vec<String>, rows: &Vec<Vec<String>>) -> Vec<Constraint> {
     let mut widths = Vec::with_capacity(header.len());
     for (i, column) in header.iter().enumerate() {
         let mut max = column.chars().count();

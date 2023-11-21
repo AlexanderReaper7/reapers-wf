@@ -2,12 +2,91 @@ use crate::api;
 use crate::config::Config;
 use crate::models::Fissure;
 use notify_rust::Notification;
+use ratatui::layout::Rect;
+use ratatui::style::{Style, Stylize};
+use ratatui::widgets::{Row, Table, TableState};
+use ratatui::Frame;
 use std::sync::Arc;
 use std::time::Duration;
 use time::OffsetDateTime;
-use tokio::sync::mpsc::Sender;
+use tokio::sync::mpsc::{self, Sender};
 use tokio::sync::RwLock;
 use tokio::task::JoinHandle;
+
+pub struct FissureWatcher {
+    fissures: Vec<Fissure>,
+    filtered_fissures: Vec<Fissure>,
+    pub fissure_rx: mpsc::Receiver<Event>,
+    pub fissure_handle: tokio::task::JoinHandle<()>,
+    table_rows: Vec<Vec<String>>,
+    table_state: TableState,
+}
+impl FissureWatcher {
+    pub fn new(config: Arc<RwLock<Config>>) -> Self {
+        let (fissure_tx, fissure_rx) = mpsc::channel::<Event>(20);
+        let fissure_handle = run(Arc::clone(&config), fissure_tx);
+        Self {
+            fissures: Vec::new(),
+            filtered_fissures: Vec::new(),
+            fissure_rx,
+            fissure_handle,
+            table_rows: Vec::new(),
+            table_state: TableState::default(),
+        }
+    }
+
+    pub fn update_fissures(&mut self, fissures: Vec<Fissure>, filtered_fissures: Vec<Fissure>) {
+        self.fissures = fissures;
+        self.update_filtered_fissures(filtered_fissures);
+    }
+
+    pub fn update_filtered_fissures(&mut self, filtered_fissures: Vec<Fissure>) {
+        self.filtered_fissures = filtered_fissures;
+        self.table_rows = self
+            .filtered_fissures
+            .iter()
+            .map(|fissure| fissure.table_string())
+            .collect::<Vec<Vec<String>>>();
+    }
+
+    pub fn next(&mut self) {
+        let i = match self.table_state.selected() {
+            Some(i) => {
+                if i >= self.filtered_fissures.len() - 1 {
+                    0
+                } else {
+                    i + 1
+                }
+            }
+            None => 0,
+        };
+        self.table_state.select(Some(i));
+    }
+
+    pub fn previous(&mut self) {
+        let i = match self.table_state.selected() {
+            Some(i) => {
+                if i == 0 {
+                    self.filtered_fissures.len() - 1
+                } else {
+                    i - 1
+                }
+            }
+            None => 0,
+        };
+        self.table_state.select(Some(i));
+    }
+    pub fn draw(&mut self, f: &mut Frame, area: Rect) {
+        let header = Fissure::table_headers();
+        let widths = crate::ui::calculate_table_widths(&header, &self.table_rows);
+        let fissure_table = Table::new(self.table_rows.iter().cloned().map(|row| Row::new(row)))
+            .header(Row::new(header))
+            .widths(&widths)
+            .column_spacing(3)
+            .highlight_style(Style::default().bold());
+        f.render_stateful_widget(fissure_table, area, &mut self.table_state);
+    }
+}
 
 pub enum Event {
     Fissures {
@@ -33,9 +112,10 @@ pub fn run(config: Arc<RwLock<Config>>, tx: Sender<Event>) -> JoinHandle<()> {
                 if new_count > 0 || removed_count > 0 {
                     if new_count > 0 {
                         // apply filters to new fissures
-                        let new_fissures = &fissures[(fissures.len() - new_count)..(fissures.len())].to_vec();
+                        let new_fissures =
+                            &fissures[(fissures.len() - new_count)..(fissures.len())].to_vec();
                         let filtered_fissures = config.read().await.apply_filters(new_fissures); // WARN: unnecessary clone?
-                        // send notification
+                                                                                                 // send notification
                         if filtered_fissures.len() > 0 {
                             spawn_notifications(
                                 &filtered_fissures,
@@ -45,19 +125,20 @@ pub fn run(config: Arc<RwLock<Config>>, tx: Sender<Event>) -> JoinHandle<()> {
                         }
                     }
                     let filtered_fissures = config.read().await.apply_filters_cloned(&fissures);
-                    sender.send(Event::Fissures {
-                        fissures: fissures.clone(),
-                        filtered_fissures,
-                        new_count,
-                    })
-                    .await
-                    .unwrap();
-                }
-                else {
+                    sender
+                        .send(Event::Fissures {
+                            fissures: fissures.clone(),
+                            filtered_fissures,
+                            new_count,
+                        })
+                        .await
+                        .unwrap();
+                } else {
                     sender.send(Event::NoNewFissures).await.unwrap();
                 }
             } else {
-                sender.send(Event::Err("Failed to fetch fissures".to_string()))
+                sender
+                    .send(Event::Err("Failed to fetch fissures".to_string()))
                     .await
                     .unwrap();
             }
@@ -66,9 +147,7 @@ pub fn run(config: Arc<RwLock<Config>>, tx: Sender<Event>) -> JoinHandle<()> {
 }
 
 /// Consumes a vector of Fissures with the current Fissures, returning None if nothing changed or an updated vector and a count of the new Fissures if something did change
-pub async fn update_fissures(
-    old: &mut Vec<Fissure>,
-) -> reqwest::Result<(usize, usize)> {
+pub async fn update_fissures(old: &mut Vec<Fissure>) -> reqwest::Result<(usize, usize)> {
     let current = api::get_fissures().await?;
     // remove expired fissures
     let expired: Vec<usize> = old
