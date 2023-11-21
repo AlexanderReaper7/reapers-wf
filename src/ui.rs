@@ -14,11 +14,11 @@ pub fn draw(f: &mut Frame, app: &mut App) {
         .tabs
         .titles
         .iter()
-        .map(|t| text::Line::from(Span::styled(*t, Style::default().fg(Color::Green))))
+        .map(|t| text::Line::from(Span::styled(*t, Style::default().fg(Color::Red))))
         .collect();
     let tabs = Tabs::new(titles)
         .block(Block::default().borders(Borders::ALL))
-        .highlight_style(Style::default().fg(Color::Yellow))
+        .highlight_style(Style::default().fg(Color::LightRed).bold())
         .select(app.tabs.index);
     f.render_widget(tabs, chunks[0]);
     draw_footer(f, chunks[2]);
